@@ -61,17 +61,26 @@ def create_database(n:int=2, balanced:bool=True) -> None:
 
     return 
 
-def train_model(X:np.array, Y:np.array):
+def activation_func(v):
+    return 1 if v>=0 else 0
+
+def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01):
     """
     Realiza o treinamento do perceptron.
     -------PARÂMETROS------
-    w:(array) vetor de pesos
+    X: (array dimensão n x 2) contém os valores de variáveis usadas na classificação
+    Y: (array dimensão n) contém as classes de cada objeto.
+    learn_rate: (float) taxa de aprendizado do perceptron. Valor padrão 0.01
+    bias: (float) bias do perceptron. Valor padrão 0
     """
-    n = len(Y)
+    lin,col = np.shape(X)
+    w = np.zeros(col)
 
-    w = np.zeros(n)
-
+    for entrada, objetivo in zip(X, Y):
+        y = activation_func(np.matmul(w,entrada.T) + bias)
+        w = w + learn_rate*(objetivo - y)* entrada
     
+    return w, bias
 
 def cross_validation(base:str):
     """
@@ -98,6 +107,7 @@ def cross_validation(base:str):
         # print(f"  Test:  index={test_index}")
 
         train_model(X, Y)
+        break
 
 # create_database(2, False)
 
