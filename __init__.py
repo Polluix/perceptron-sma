@@ -79,8 +79,9 @@ def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01):
     for entrada, objetivo in zip(X, Y):
         y = activation_func(np.matmul(w,entrada.T) + bias)
         w = w + learn_rate*(objetivo - y)* entrada
+        errou = objetivo - y
     
-    return w, bias
+    return w, bias, errou
 
 def cross_validation(base:str):
     """
