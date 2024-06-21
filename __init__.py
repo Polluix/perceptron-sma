@@ -5,7 +5,7 @@ import os
 
 sep = r'/'
 
-def create_database(n=2, balanced=True):
+def create_database(n:int=2, balanced:bool=True) -> None:
     """
     Cria base de dados para implementação do perceptron.
     
@@ -52,8 +52,8 @@ def create_database(n=2, balanced=True):
     if balanced == True: name = 'balanceada'
     else: name = 'desbalanceada'
 
-    print(os.getcwd() + sep + 'base_perceptron_' + name + '.csv')
-    df.to_csv(os.getcwd() + sep + 'base_perceptron_' + name + '.csv', index=False)
+
+    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'.csv', index=False)
 
     plt.axis('equal')
     plt.grid()
@@ -61,4 +61,47 @@ def create_database(n=2, balanced=True):
 
     return 
 
-create_database(2, False)
+def train_model(X:np.array, Y:np.array):
+    """
+    Realiza o treinamento do perceptron.
+    -------PARÂMETROS------
+    w:(array) vetor de pesos
+    """
+    n = len(Y)
+
+    w = np.zeros(n)
+
+    
+
+def cross_validation(base:str):
+    """
+    Implementa validação cruzada para bases de dados estratificadas,
+    utilizando o StratifiedKFold para a construção da base.
+    Numero de dobras padronizado em 5.
+    ------PARÂMETROS------
+    base: (string) caminho para a base primária para gerar as bases da validação cruzada.
+    """
+
+    from sklearn.model_selection import StratifiedKFold
+
+    df = pd.read_csv(base, sep=',', decimal='.')
+
+    X = np.array(df.drop(columns=['CLASSE'])) #variáveis do modelo
+    Y = np.array(df.drop(columns=['X','Y'])) #classes do modelo
+
+    skf = StratifiedKFold(n_splits=5)
+    skf.get_n_splits(base)
+
+    for i, (train_index, test_index) in enumerate(skf.split(X, Y)):
+        # print(f"Fold {i}:")
+        # print(f"  Train: index={train_index}")
+        # print(f"  Test:  index={test_index}")
+
+        train_model(X, Y)
+
+# create_database(2, False)
+
+base = 'src/base_perceptron_balanceada_treino.csv'
+cross_validation(base)
+
+
