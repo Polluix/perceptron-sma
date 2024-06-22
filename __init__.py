@@ -65,7 +65,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
     return 
 
 def activation_func(v):
-    return 1 if v>=1.5 else 0
+    return 1 if v>=0 else 0
 
 def perceptron(X, d, w, bias):
     result = []
@@ -104,7 +104,7 @@ def cross_validation(base:str, nfolds=10):
         bias = 0
         X_treino = np.array(df.drop(columns=['CLASSE']).iloc[train_index])
         Y_treino = np.array(df.drop(columns=['X','Y']).iloc[train_index])
-        w = train_model(X_treino, Y_treino, bias=bias,learn_rate=0.01, nepocas=100)
+        w, e = train_model(X_treino, Y_treino, bias=bias,learn_rate=0.01, nepocas=100)
         
         pesos_teste = w
         
@@ -135,13 +135,17 @@ def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepo
     """
     lin,col = np.shape(X)
     w = np.full(col, 0)
-
+    erro_med = []
+    erro = 0
     for i in range(nepocas):    
         for entrada, objetivo in zip(X, Y):
             y = activation_func(np.matmul(w,entrada)+bias)
+            erro = erro+(objetivo - y)**2
             w = w + learn_rate*(objetivo - y)* entrada
 
-    return w
+        erro_med.append(erro/len(Y))
+    erro_med = np.array(erro_med)
+    return w, erro_med
 # _____________________TREINO_________________________
 def treina_modelo():
 
@@ -156,10 +160,10 @@ def treina_modelo():
     X = np.array(df.drop(columns=['CLASSE'])) #variáveis do modelo
     d = np.array(df.drop(columns=['X','Y']))
 
-    w = train_model(X, d, nepocas=100,bias=0, learn_rate=0.01)
-    print(f'RESULTADO DO TREINAMENTO: {w}')
+    w, e = train_model(X, d, nepocas=10,bias=0.1, learn_rate=0.01)
+    print(f'RESULTADO DO TREINAMENTO\nVetor de pesos: {w}\nERROS MÉDIOS QUADRADOS: {e}')
 
-    return w
+    return w, e
 
 # __________________________TESTE___________________________
 
@@ -206,7 +210,8 @@ def valida_bases():
 valida_bases()
 
 
-w = treina_modelo()#vetor de pesos obtido do treino do modelo
+w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
+
 
 X, d, resultados = testa_modelo(w)
 
