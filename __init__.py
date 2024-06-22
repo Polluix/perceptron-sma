@@ -98,7 +98,7 @@ def cross_validation(base:str, nfolds=10):
     skf = StratifiedKFold(n_splits=nfolds)
     skf.get_n_splits(base)
 
-    MSEs = []
+    MSE = np.ones(nfolds)
 
     for i, (train_index, test_index) in enumerate(skf.split(X, Y)):
         bias = 0
@@ -115,14 +115,14 @@ def cross_validation(base:str, nfolds=10):
 
         # calculo do erro quadratico medio
         erro_quad = 0
-        for i in range(len(resultados)):
-            erro_quad = erro_quad+ (Y_teste[i] - resultados[i])**2
+        for j in range(len(resultados)):
+            
+            erro_quad = erro_quad+ (Y_teste[j][0] - resultados[j])**2
 
-        MSE = erro_quad/len(resultados)
-        MSEs.append(MSE)
+        MSE[i] = erro_quad/len(resultados)
+        
 
-    MSEs = np.array(MSEs)
-    return MSEs
+    return MSE
 
 def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepocas:int=10):
     """
