@@ -5,7 +5,7 @@ import os
 
 sep = r'/'
 
-base_treino = 'src/base_perceptron_NLSbalanceada_treino.csv'
+base_treino = 'src/base_perceptron_balanceada_treino.csv'
 base_teste = 'src/base_perceptron_desbalanceada_teste.csv'
 BIAS = 0.2
 treshold = 1.0
@@ -37,7 +37,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
         mean = [x_mean, y_mean]
         cov = [[rad_x, 0], [0, rad_y]]
 
-        num = 200
+        num = 20
 
         if balanced==False:
             if i%2!=0:
@@ -58,7 +58,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
     else: name = 'desbalanceada'
 
 
-    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_treino.csv', index=False)
+    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_teste.csv', index=False)
 
     plt.axis('equal')
     plt.grid()
@@ -252,13 +252,13 @@ valida_bases()
 w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
 
 # plotando a evolução do erro durante o treinamento
-epocas = np.arange(1,len(erro_med)+1)
-plt.plot(epocas,erro_med)
-plt.xlabel('Época de treinamento')
-plt.ylabel('Erro médio quadrado')
-plt.grid()
-plt.savefig('assets/MSE.png')
-plt.show()
+# epocas = np.arange(1,len(erro_med)+1)
+# plt.plot(epocas,erro_med)
+# plt.xlabel('Época de treinamento')
+# plt.ylabel('Erro médio quadrado')
+# plt.grid()
+# plt.savefig('assets/MSE.png')
+# plt.show()
 
 X, d, resultados = testa_modelo(w)
 
