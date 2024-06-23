@@ -5,8 +5,8 @@ import os
 
 sep = r'/'
 
-base_treino = 'src/base_perceptron_desbalanceada_treino.csv'
-base_teste = 'src/base_perceptron_balanceada_teste.csv'
+base_treino = 'src/base_perceptron_NLSbalanceada_treino.csv'
+base_teste = 'src/base_perceptron_desbalanceada_teste.csv'
 BIAS = 0.2
 treshold = 1.0
 
@@ -58,7 +58,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
     else: name = 'desbalanceada'
 
 
-    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_treino2.csv', index=False)
+    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_treino.csv', index=False)
 
     plt.axis('equal')
     plt.grid()
@@ -233,10 +233,12 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
     plt.plot(results, fronteira_decisao(results, weight),color='k')
     plt.scatter(x11,x21,color='b', label='CLASSE 0')
     plt.scatter(x12,x22,color='r', label='CLASSE 1')
-    plt.ylim(X[:,1].min()-1,X[:,1].max()+1)
+    plt.ylim(-6,16)
+    plt.xlim(-6,16)
     plt.xlabel('Variável 1')
     plt.ylabel('Variável 2')
     plt.legend()
+    name = name.replace('src/','')
     plt.savefig('./assets/'+name+'.png')
     plt.show()
 
@@ -248,6 +250,15 @@ valida_bases()
 
 
 w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
+
+# plotando a evolução do erro durante o treinamento
+epocas = np.arange(1,len(erro_med)+1)
+plt.plot(epocas,erro_med)
+plt.xlabel('Época de treinamento')
+plt.ylabel('Erro médio quadrado')
+plt.grid()
+plt.savefig('assets/MSE.png')
+plt.show()
 
 X, d, resultados = testa_modelo(w)
 
