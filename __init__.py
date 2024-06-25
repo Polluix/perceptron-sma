@@ -8,7 +8,7 @@ sep = r'/'
 base_treino = 'src/base_perceptron_balanceada_treino.csv'
 base_teste = 'src/base_perceptron_desbalanceada_teste.csv'
 BIAS = 0.2
-treshold = 1.0
+treshold = 1
 
 def create_database(n:int=2, balanced:bool=True) -> None:
     """
@@ -105,7 +105,7 @@ def cross_validation(base:str, nfolds=10):
     for i, (train_index, test_index) in enumerate(skf.split(X, Y)):
         X_treino = np.array(df.drop(columns=['CLASSE']).iloc[train_index])
         Y_treino = np.array(df.drop(columns=['X','Y']).iloc[train_index])
-        w, e = train_model(X_treino, Y_treino, bias=BIAS,learn_rate=0.1, nepocas=100)
+        w, e = train_model(X_treino, Y_treino, bias=BIAS,learn_rate=0.1,nepocas=10)
         
         pesos_teste = w
         
@@ -149,6 +149,10 @@ def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepo
     plot_fronteira_decisao(X,Y,w,bias,base_treino) if verbose==True else 0
 
     return w, erro_med
+
+def fronteira_decisao(x, weight, bias):
+        return ((-weight[0]/weight[1])*x+(-bias+treshold)/weight[1])
+
 # _____________________TREINO_________________________
 def treina_modelo():
 
@@ -225,12 +229,9 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
     x21 = classe1[:,1]
     x12 = classe2[:,0]
     x22 = classe2[:,1]
-
-    def fronteira_decisao(x, weight):
-        return ((-weight[0]/weight[1])*x+(-bias+treshold)/weight[1])
     
     results = np.linspace(x11.min(),x12.max(),n)
-    plt.plot(results, fronteira_decisao(results, weight),color='k')
+    plt.plot(results, fronteira_decisao(results, weight,bias),color='k')
     plt.scatter(x11,x21,color='b', label='CLASSE 0')
     plt.scatter(x12,x22,color='r', label='CLASSE 1')
     plt.ylim(-6,16)
@@ -246,23 +247,107 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
 
 # create_database(2, False)
 
-valida_bases()
+# valida_bases()
 
 
-w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
+# w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
 
-# plotando a evolução do erro durante o treinamento
+# # plotando a evolução do erro durante o treinamento
 # epocas = np.arange(1,len(erro_med)+1)
 # plt.plot(epocas,erro_med)
 # plt.xlabel('Época de treinamento')
 # plt.ylabel('Erro médio quadrado')
 # plt.grid()
-# plt.savefig('assets/MSE.png')
+# # plt.savefig('assets/MSE.png')
 # plt.show()
 
-X, d, resultados = testa_modelo(w)
+# X, d, resultados = testa_modelo(w)
 
-avalia_modelo(d,resultados)
+# avalia_modelo(d,resultados)
 
-plot_fronteira_decisao(X,d,w,BIAS,base_teste)
+# plot_fronteira_decisao(X,d,w,BIAS,base_teste)
 
+# ----------------------PLOTS RELATORIO-----------------------
+
+
+# ------------------------ERROS MEDIOS QUADRADOS - THRESHOLDS----------------------------------
+# MSE_threshold_0 = [0.3375, 0.35,   0.225,  0.,     0    ]
+# MSE_threshold_1 = [0,0,0,0,0]
+# MSE_threshold_025 = [0  ,   0.0125, 0  ,   0   , 0  ]
+
+# pastas = np.array([i+1 for i in range(5)])
+# plt.plot(pastas, MSE_threshold_025, label='Threshold = 0.25', color='r')
+# plt.plot(pastas, MSE_threshold_0, label='Threshold = 0',color='g')
+# plt.plot(pastas, MSE_threshold_1, label='Threshold = 1',color='b')
+# plt.scatter(pastas, MSE_threshold_025,color='r')
+# plt.scatter(pastas, MSE_threshold_0,color='g')
+# plt.scatter(pastas, MSE_threshold_1,color='b')
+# plt.xticks(np.arange(1,6,1))
+# plt.xlabel('PASTAS')
+# plt.ylabel("MSE")
+# plt.legend()
+# plt.grid()
+# plt.savefig('Erros_thresholds.png')
+# plt.show()
+# ---------------------------------------------------------------------------------------
+
+# -------------------------FRONTEIRAS DECISAO TREINAMENTO ---------------------------------
+df_balanced = pd.read_csv('src/base_perceptron_balanceada_treino.csv')
+df_nls_balanced = pd.read_csv('src/base_perceptron_NLSbalanceada_treino.csv')
+df_unbalanced = pd.read_csv('src/base_perceptron_desbalanceada_treino.csv')
+df_nls_unbalanced = pd.read_csv('src/base_perceptron_NLSdesbalanceada_treino.csv')
+
+bases = [df_balanced,df_unbalanced,df_nls_balanced,df_nls_unbalanced]
+results = []
+
+fig, ax = plt.subplots(nrows=2,ncols=2,figsize=(14,12))
+
+i = 0
+for base in bases:
+    X = np.array(base.drop(columns=['CLASSE'])) #variáveis do modelo
+    d = np.array(base.drop(columns=['X','Y']))
+    
+    classe0 = np.array(base[base['CLASSE']==0].reset_index(drop=True).drop(columns='CLASSE'))
+    classe1 = np.array(base[base['CLASSE']==1].reset_index(drop=True).drop(columns='CLASSE'))
+
+    w,e = train_model(X,d,BIAS)
+
+
+    x = np.linspace(classe0[:,0].min(), classe1[:,0].max(),100)
+    results.append(fronteira_decisao(x,w,BIAS))
+
+    if i==0:
+        ax[0,0].plot(x, results[i],color='k')
+        ax[0,0].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
+        ax[0,0].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[0,0].set_xlabel('Feature 1')
+        ax[0,0].set_ylabel('Feature 2')
+        ax[0,0].set_title('Treinamento - LS Balanceada')
+        ax[0,0].legend()
+    elif i==1:
+        ax[0,1].plot(x, results[i],color='k')
+        ax[0,1].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
+        ax[0,1].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[0,1].set_xlabel('Feature 1')
+        ax[0,1].set_ylabel('Feature 2')
+        ax[0,1].set_title('Treinamento - LS Não Balanceada')
+        ax[0,1].legend()
+    elif i==2:
+        ax[1,0].plot(x, results[i],color='k')
+        ax[1,0].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
+        ax[1,0].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[1,0].set_xlabel('Feature 1')
+        ax[1,0].set_ylabel('Feature 2')
+        ax[1,0].set_title('Treinamento - NLS Balanceada')
+        ax[1,0].legend()
+    else:
+        ax[1,1].plot(x, results[i],color='k')
+        ax[1,1].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
+        ax[1,1].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[1,1].set_xlabel('Feature 1')
+        ax[1,1].set_ylabel('Feature 2')
+        ax[1,1].set_title('Treinamento - NLS Não Balanceada')
+        ax[1,1].legend()
+    i+=1
+plt.savefig('Fonteiras_treinamento')
+plt.show()
