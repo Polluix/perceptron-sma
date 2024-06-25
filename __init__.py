@@ -5,8 +5,8 @@ import os
 
 sep = r'/'
 
-base_treino = 'src/base_perceptron_balanceada_treino.csv'
-base_teste = 'src/base_perceptron_desbalanceada_teste.csv'
+base_treino = 'src/base_perceptron_desbalanceada_treino.csv'
+base_teste = 'src/base_perceptron_balanceada_teste.csv'
 BIAS = 0.2
 treshold = 1
 
@@ -31,13 +31,13 @@ def create_database(n:int=2, balanced:bool=True) -> None:
         if i!=0:
             soma = 8
 
-            x_mean += 1.5*soma
-            y_mean += 1.5*soma
+            x_mean += soma
+            y_mean += soma
 
         mean = [x_mean, y_mean]
         cov = [[rad_x, 0], [0, rad_y]]
 
-        num = 20
+        num = 100
 
         if balanced==False:
             if i%2!=0:
@@ -58,7 +58,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
     else: name = 'desbalanceada'
 
 
-    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_teste.csv', index=False)
+    df.to_csv(os.getcwd()+sep+'src'+sep+'base_perceptron_'+ name+'_treino.csv', index=False)
 
     plt.axis('equal')
     plt.grid()
@@ -161,8 +161,8 @@ def treina_modelo():
     print(F'ERROS QUADRÁTIOS MÉDIOS - VALIDAÇÃO CRUZADA: {MSEs}')
 
     #plot da função de resultado de treino
-    df = pd.read_csv(base_treino).sort_index()
-    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+    df = pd.read_csv(base_treino)
+    # df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
     X = np.array(df.drop(columns=['CLASSE'])) #variáveis do modelo
     d = np.array(df.drop(columns=['X','Y']))
@@ -230,12 +230,10 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
     x12 = classe2[:,0]
     x22 = classe2[:,1]
     
-    results = np.linspace(x11.min(),x12.max(),n)
+    results = np.linspace(x11.min(),x12.max(),100)
     plt.plot(results, fronteira_decisao(results, weight,bias),color='k')
     plt.scatter(x11,x21,color='b', label='CLASSE 0')
     plt.scatter(x12,x22,color='r', label='CLASSE 1')
-    plt.ylim(-6,16)
-    plt.xlim(-6,16)
     plt.xlabel('Variável 1')
     plt.ylabel('Variável 2')
     plt.legend()
@@ -245,51 +243,29 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
 
     
 
-# create_database(2, False)
+# create_database(2,False)
 
-# valida_bases()
+valida_bases()
 
 
-# w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
+w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
 
-# # plotando a evolução do erro durante o treinamento
-# epocas = np.arange(1,len(erro_med)+1)
-# plt.plot(epocas,erro_med)
-# plt.xlabel('Época de treinamento')
-# plt.ylabel('Erro médio quadrado')
-# plt.grid()
-# # plt.savefig('assets/MSE.png')
-# plt.show()
+# plotando a evolução do erro durante o treinamento
+epocas = np.arange(1,len(erro_med)+1)
+plt.plot(epocas,erro_med)
+plt.xlabel('Época de treinamento')
+plt.ylabel('Erro médio quadrado')
+plt.grid()
+# plt.savefig('assets/MSE.png')
+plt.show()
 
-# X, d, resultados = testa_modelo(w)
+X, d, resultados = testa_modelo(w)
 
-# avalia_modelo(d,resultados)
+avalia_modelo(d,resultados)
 
-# plot_fronteira_decisao(X,d,w,BIAS,base_teste)
+plot_fronteira_decisao(X,d,w,BIAS,base_teste)
 
 # ----------------------PLOTS RELATORIO-----------------------
-
-
-# ------------------------ERROS MEDIOS QUADRADOS - THRESHOLDS----------------------------------
-# MSE_threshold_0 = [0.3375, 0.35,   0.225,  0.,     0    ]
-# MSE_threshold_1 = [0,0,0,0,0]
-# MSE_threshold_025 = [0  ,   0.0125, 0  ,   0   , 0  ]
-
-# pastas = np.array([i+1 for i in range(5)])
-# plt.plot(pastas, MSE_threshold_025, label='Threshold = 0.25', color='r')
-# plt.plot(pastas, MSE_threshold_0, label='Threshold = 0',color='g')
-# plt.plot(pastas, MSE_threshold_1, label='Threshold = 1',color='b')
-# plt.scatter(pastas, MSE_threshold_025,color='r')
-# plt.scatter(pastas, MSE_threshold_0,color='g')
-# plt.scatter(pastas, MSE_threshold_1,color='b')
-# plt.xticks(np.arange(1,6,1))
-# plt.xlabel('PASTAS')
-# plt.ylabel("MSE")
-# plt.legend()
-# plt.grid()
-# plt.savefig('Erros_thresholds.png')
-# plt.show()
-# ---------------------------------------------------------------------------------------
 
 # -------------------------FRONTEIRAS DECISAO TREINAMENTO ---------------------------------
 df_balanced = pd.read_csv('src/base_perceptron_balanceada_treino.csv')
@@ -310,40 +286,39 @@ for base in bases:
     classe0 = np.array(base[base['CLASSE']==0].reset_index(drop=True).drop(columns='CLASSE'))
     classe1 = np.array(base[base['CLASSE']==1].reset_index(drop=True).drop(columns='CLASSE'))
 
-    w,e = train_model(X,d,BIAS)
-
+    w,e = train_model(X,d,bias=BIAS,nepocas=5, learn_rate=0.1)
 
     x = np.linspace(classe0[:,0].min(), classe1[:,0].max(),100)
     results.append(fronteira_decisao(x,w,BIAS))
 
     if i==0:
         ax[0,0].plot(x, results[i],color='k')
-        ax[0,0].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
-        ax[0,0].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[0,0].scatter(classe0[:,0],classe0[:,1], label='classe 0', color='r',marker='x')
+        ax[0,0].scatter(classe1[:,0],classe1[:,1], label='classe 1', color='g',marker='x')
         ax[0,0].set_xlabel('Feature 1')
         ax[0,0].set_ylabel('Feature 2')
         ax[0,0].set_title('Treinamento - LS Balanceada')
         ax[0,0].legend()
     elif i==1:
         ax[0,1].plot(x, results[i],color='k')
-        ax[0,1].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
-        ax[0,1].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[0,1].scatter(classe0[:,0],classe0[:,1], label='classe 0', color='r',marker='x')
+        ax[0,1].scatter(classe1[:,0],classe1[:,1], label='classe 1', color='g',marker='x')
         ax[0,1].set_xlabel('Feature 1')
         ax[0,1].set_ylabel('Feature 2')
         ax[0,1].set_title('Treinamento - LS Não Balanceada')
         ax[0,1].legend()
     elif i==2:
         ax[1,0].plot(x, results[i],color='k')
-        ax[1,0].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
-        ax[1,0].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[1,0].scatter(classe0[:,0],classe0[:,1], label='classe 0', color='r',marker='x')
+        ax[1,0].scatter(classe1[:,0],classe1[:,1], label='classe 1', color='g',marker='x')
         ax[1,0].set_xlabel('Feature 1')
         ax[1,0].set_ylabel('Feature 2')
         ax[1,0].set_title('Treinamento - NLS Balanceada')
         ax[1,0].legend()
     else:
         ax[1,1].plot(x, results[i],color='k')
-        ax[1,1].scatter(classe0[:,0],classe0[:,1], label='classe0', color='r',marker='x')
-        ax[1,1].scatter(classe1[:,0],classe1[:,1], label='classe1', color='g',marker='x')
+        ax[1,1].scatter(classe0[:,0],classe0[:,1], label='classe 0', color='r',marker='x')
+        ax[1,1].scatter(classe1[:,0],classe1[:,1], label='classe 1', color='g',marker='x')
         ax[1,1].set_xlabel('Feature 1')
         ax[1,1].set_ylabel('Feature 2')
         ax[1,1].set_title('Treinamento - NLS Não Balanceada')
