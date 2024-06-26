@@ -155,6 +155,7 @@ def cross_validation(base:str, nfolds=10):
     indices_treino, indices_teste = split(skf,nfolds)
 
     MSE = np.ones(nfolds)
+    stds = np.ones(nfolds)
     folds = np.arange(0,nfolds,1)
     for i,train_index, test_index in zip(folds,indices_treino,indices_teste):
         X_treino = np.array(df.drop(columns=['CLASSE']).iloc[train_index])
@@ -175,9 +176,10 @@ def cross_validation(base:str, nfolds=10):
             erro_quad = erro_quad+ (Y_teste[j][0] - resultados[j])**2
 
         MSE[i] = erro_quad/len(resultados)
+        stds[i] = np.std(erro_quad)
         
 
-    return MSE
+    return MSE,stds
 
 def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepocas:int=10,verbose=False):
     """
@@ -211,9 +213,10 @@ def fronteira_decisao(x, weight, bias):
 # _____________________TREINO_________________________
 def treina_modelo():
 
-    MSEs = cross_validation(base_treino,nfolds=7)
+    MSEs,stds = cross_validation(base_treino,nfolds=7)
 
-    print(F'ERROS QUADRÁTIOS MÉDIOS - VALIDAÇÃO CRUZADA: {MSEs}')
+    print(f'ERROS QUADRÁTIOS MÉDIOS - VALIDAÇÃO CRUZADA: {MSEs}')
+    print(f'DESVIOS PADRÃO - VALIDAÇÃO CRUZADA: {stds}')
 
     #plot da função de resultado de treino
     df = pd.read_csv(base_treino)
