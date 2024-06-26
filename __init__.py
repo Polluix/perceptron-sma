@@ -77,6 +77,65 @@ def perceptron(X, w, bias):
     result = np.array(result)
     return result
 
+def obtain_folds(base,nfolds):
+    """
+    Obtem os indices dos elementos de cada pasta para a validação cruzada.
+    ----------PARÂMETROS----------
+    base: string com o caminho da base de treino, utilizada na validação. 
+    nfolds: número de pastas utilizadas na validação cruzada.
+    """
+    df = pd.read_csv(base)
+    df = df.sample(frac=1,random_state=42).reset_index(drop=True)
+
+    n = df['CLASSE'].value_counts()
+    
+    n_min = n.min()
+    
+    assert n_min >= nfolds,f'Uma das classes não possui elementos suficientes para a divisão em {nfolds}'
+
+    n_unique_objects_fold = np.array([np.floor(i/n_min) for i in n])
+    
+    index_list = []
+    classes = np.array(df['CLASSE'].unique())
+
+    for classe in classes:
+        index_list.append(np.where(df['CLASSE']==classe))
+    
+    index_list = [i[0] for i in index_list]
+
+    element_index_list = []
+
+    j = 0
+    for lista in index_list:
+        #separa o grupos de indices para cada pasta com base no numero de objetos de cada classe calculado anteriormente
+        indices_separados = [lista[i*int(n_unique_objects_fold[j]):(i+1)*int(n_unique_objects_fold[j])] for i in range(nfolds)]
+        j=j+1
+        element_index_list.append(indices_separados)
+
+    #junta os indices dos elementos de cada classe
+    aux = []
+    for i in range(len(element_index_list[0])):
+        classe1 = element_index_list[0][i]
+        classe2 = element_index_list[1][i]
+        aux.append(np.concatenate((classe1,classe2)))
+
+    return aux
+
+def split(skf,nfolds):
+    train_indexes = []
+    test_indexes = []
+    for i in range(nfolds):
+        aux = []
+        for j in range(nfolds):
+            if j!=i:
+                aux.append(skf[j])
+            else:
+                test_indexes.append(skf[i])
+        aux = [i for sublista in aux for i in sublista]
+        train_indexes.append([int(i) for i in aux])
+
+    return train_indexes,test_indexes
+    
 
 def cross_validation(base:str, nfolds=10):
     """
@@ -87,22 +146,17 @@ def cross_validation(base:str, nfolds=10):
     base: (string) caminho para a base primária para gerar as bases da validação cruzada.
     """
 
-    from sklearn.model_selection import StratifiedKFold
-    from sklearn.utils import shuffle
-
     df = pd.read_csv(base, sep=',', decimal='.')
 
-    X = np.array(df.drop(columns=['CLASSE'])) #variáveis do modelo
-    Y = np.array(df.drop(columns=['X','Y'])) #classes do modelo
+    df = df.sample(frac=1,random_state=42).reset_index(drop=True)
 
-    X, Y = shuffle(X,Y,random_state=42)
-
-    skf = StratifiedKFold(n_splits=nfolds)
-    skf.get_n_splits(base)
+    skf = obtain_folds(base,nfolds)
+    
+    indices_treino, indices_teste = split(skf,nfolds)
 
     MSE = np.ones(nfolds)
-
-    for i, (train_index, test_index) in enumerate(skf.split(X, Y)):
+    folds = np.arange(0,nfolds,1)
+    for i,train_index, test_index in zip(folds,indices_treino,indices_teste):
         X_treino = np.array(df.drop(columns=['CLASSE']).iloc[train_index])
         Y_treino = np.array(df.drop(columns=['X','Y']).iloc[train_index])
         w, e = train_model(X_treino, Y_treino, bias=BIAS,learn_rate=0.1,nepocas=10)
