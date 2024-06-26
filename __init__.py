@@ -7,8 +7,8 @@ sep = r'/'
 
 base_treino = 'src/base_perceptron_desbalanceada_treino.csv'
 base_teste = 'src/base_perceptron_balanceada_teste.csv'
-BIAS = 0.2
-treshold = 1
+BIAS = 0.5
+
 
 def create_database(n:int=2, balanced:bool=True) -> None:
     """
@@ -32,16 +32,16 @@ def create_database(n:int=2, balanced:bool=True) -> None:
             soma = 8
 
             x_mean += soma
-            y_mean += soma
+            y_mean += 1.5*soma
 
         mean = [x_mean, y_mean]
         cov = [[rad_x, 0], [0, rad_y]]
 
-        num = 100
+        num = 20
 
         if balanced==False:
             if i%2!=0:
-                num = 5
+                num = 7
             x, y = np.random.multivariate_normal(mean, cov, num).T
         else:
             x, y = np.random.multivariate_normal(mean, cov, num).T
@@ -67,7 +67,7 @@ def create_database(n:int=2, balanced:bool=True) -> None:
     return 
 
 def activation_func(v):
-    return 1 if v>=treshold else 0
+    return 1 if v>=BIAS else 0
 
 def perceptron(X, w, bias):
     result = []
@@ -137,8 +137,9 @@ def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepo
     lin,col = np.shape(X)
     w = np.full(col, 0)
     erro_med = []
-    erro = 0
-    for i in range(nepocas):    
+    
+    for i in range(nepocas):   
+        erro = 0 
         for entrada, objetivo in zip(X, Y):
             y = activation_func(np.matmul(w,entrada)+bias)
             erro = erro+(objetivo - y)**2
@@ -146,17 +147,17 @@ def train_model(X:np.array, Y:np.array, bias:float=0, learn_rate:float=0.01,nepo
 
         erro_med.append(erro/len(Y))
     erro_med = np.array(erro_med)
-    plot_fronteira_decisao(X,Y,w,bias,base_treino) if verbose==True else 0
+    plot_fronteira_decisao(X,Y,w,bias) if verbose==True else 0
 
     return w, erro_med
 
 def fronteira_decisao(x, weight, bias):
-        return ((-weight[0]/weight[1])*x+(-bias+treshold)/weight[1])
+        return ((-weight[0]/weight[1])*x+(bias)/weight[1])
 
 # _____________________TREINO_________________________
 def treina_modelo():
 
-    MSEs = cross_validation(base_treino,5)
+    MSEs = cross_validation(base_treino,nfolds=7)
 
     print(F'ERROS QUADRÁTIOS MÉDIOS - VALIDAÇÃO CRUZADA: {MSEs}')
 
@@ -167,7 +168,7 @@ def treina_modelo():
     X = np.array(df.drop(columns=['CLASSE'])) #variáveis do modelo
     d = np.array(df.drop(columns=['X','Y']))
 
-    w, e = train_model(X, d, nepocas=5,bias=BIAS, learn_rate=0.1,verbose=True)
+    w, e = train_model(X, d, nepocas=7,bias=BIAS, learn_rate=0.1,verbose=True)
     print(f'RESULTADO DO TREINAMENTO\nVetor de pesos: {w}\nERROS MÉDIOS QUADRADOS: {e}')
 
     return w, e
@@ -184,6 +185,7 @@ def testa_modelo(w):
     d_teste = np.array(df_teste.drop(columns=['X','Y']))
 
     resultados = perceptron(X_teste, w, 0)
+    plot_fronteira_decisao(X_teste,d_teste,w,BIAS,)
 
     return X_teste, d_teste, resultados
 
@@ -212,7 +214,7 @@ def valida_bases():
     else:
         print("Os DataFrames possuem elementos em comum.")
 
-def plot_fronteira_decisao(X, d, weight, bias, name):
+def plot_fronteira_decisao(X, d, weight, bias,verbose=False):
     n =len(d)
 
     classe1, classe2 = [], []
@@ -237,8 +239,8 @@ def plot_fronteira_decisao(X, d, weight, bias, name):
     plt.xlabel('Variável 1')
     plt.ylabel('Variável 2')
     plt.legend()
-    name = name.replace('src/','')
-    plt.savefig('./assets/'+name+'.png')
+    if verbose==True:
+        plt.savefig('Resultado_teste.png')
     plt.show()
 
     
@@ -250,22 +252,24 @@ valida_bases()
 
 w, erro_med = treina_modelo()#vetor de pesos obtido do treino do modelo
 
-# plotando a evolução do erro durante o treinamento
+
+
+X, d1, resultados = testa_modelo(w)
+
+avalia_modelo(d1,resultados)
+
+plot_fronteira_decisao(X,d1,w,BIAS,True)
+
+# ----------------------PLOTS RELATORIO-----------------------
+
+# ---------------EVOLUÇÃO DO ERRO DURANTE ÉPOCAS DE TREINAMENTO---------------------------
 epocas = np.arange(1,len(erro_med)+1)
 plt.plot(epocas,erro_med)
 plt.xlabel('Época de treinamento')
 plt.ylabel('Erro médio quadrado')
 plt.grid()
-# plt.savefig('assets/MSE.png')
+plt.savefig('MSE.png')
 plt.show()
-
-X, d, resultados = testa_modelo(w)
-
-avalia_modelo(d,resultados)
-
-plot_fronteira_decisao(X,d,w,BIAS,base_teste)
-
-# ----------------------PLOTS RELATORIO-----------------------
 
 # -------------------------FRONTEIRAS DECISAO TREINAMENTO ---------------------------------
 df_balanced = pd.read_csv('src/base_perceptron_balanceada_treino.csv')
@@ -326,3 +330,28 @@ for base in bases:
     i+=1
 plt.savefig('Fonteiras_treinamento')
 plt.show()
+# ----------------------------------------------------------------------------------------------
+
+# ------------------------------------matriz de confusão-------------------------------------------
+# as bases para treino e teste devem ser alteradas nas variáveis base_treino e base_teste, nas linhas 8 e 9
+VP = 0
+VN = 0
+FP = 0
+FN = 0
+for classe, resultado in zip(d1,resultados):
+    if classe[0]==0 and resultado==0:
+        VN +=1
+    elif classe[0]==0 and resultado==1:
+        FP+=1
+    elif classe[0]==1 and resultado==1:
+        VP+=1
+    else:
+        FN+=1
+
+print(FP,VP,FN,VN)
+print(f'falsos positivos: {FP}')
+print(f'verdadeiros positivos: {VP}')
+print(f'falsos negativos: {FN}')
+print(f'verdadeiros negativos: {VN}')
+print(f'precisão: {VP/(VP+FP)}')
+print(f'revocação: {VP/(VP+FN)}')
