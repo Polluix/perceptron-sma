@@ -7,6 +7,20 @@ seu comportamento no código.
 
 Toda a lógica é implementada no arquivo __init__.py.
 
+#---------------------INSTALAÇÃO DAS DEPENDENCIAS NECESSÁRIAS-------------------
+O projeto foi implementado utilizando um ambiente virtual e as dependências foram instaladas
+utilizando o pip. Para a criação de um ambiente virtual utilize o comando
+
+                        python -m venv .venv
+
+e para a ativação do mesmo execute o script de ativação com o comando
+
+                        .venv\Scripts\activate
+
+em seguida, instale as dependências necessárias utilzando o comando
+
+                     pip install -r requirements.txt
+
 #-------------------INSTRUÇÕES DE EXECUÇÃO----------------------------
 
 1. Utilize a função create_base() para criar bases de dados de trieno e teste para o perceptron.
