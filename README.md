@@ -8,6 +8,7 @@ seu comportamento no código.
 Toda a lógica é implementada no arquivo __init__.py.
 
 #---------------------INSTALAÇÃO DAS DEPENDENCIAS NECESSÁRIAS-------------------
+
 O projeto foi implementado utilizando um ambiente virtual e as dependências foram instaladas
 utilizando o pip. Para a criação de um ambiente virtual utilize o comando
 
